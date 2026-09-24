@@ -1,0 +1,33 @@
+﻿<div class="top-row ps-3 navbar navbar-dark" style="background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); border-bottom: 2px solid #4a5568;">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="" style="color: #f7fafc; font-weight: 600; font-size: 1.3rem;">
+            <span class="bi bi-dice-6-fill me-2" style="color: #ed8936;"></span>
+            AI DM Toolkit
+        </a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()" style="background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%); border-right: 1px solid #4a5568;">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All" style="color: #e2e8f0; border-radius: 6px; margin: 0.2rem 0;">
+                <span class="bi bi-house-door-fill me-2" aria-hidden="true" style="color: #4299e1;"></span> Home
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="npc-generator" style="color: #e2e8f0; border-radius: 6px; margin: 0.2rem 0;">
+                <span class="bi bi-person-bounding-box me-2" aria-hidden="true" style="color: #48bb78;"></span> NPC Generator
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="town-generator" style="color: #e2e8f0; border-radius: 6px; margin: 0.2rem 0;">
+                <span class="bi bi-buildings me-2" aria-hidden="true" style="color: #9f7aea;"></span> Town Generator
+            </NavLink>
+        </div>
+    </nav>
+</div>
+

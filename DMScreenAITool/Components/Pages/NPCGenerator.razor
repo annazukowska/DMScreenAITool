@@ -1,0 +1,425 @@
+﻿@page "/npc-generator"
+@rendermode InteractiveServer
+@using DMScreenAITool.Enums
+@using DMScreenAITool.Data.Model
+@using DMScreenAITool.Data.View
+@using DMScreenAITool.Services
+@using System.Text.Json
+@inject IJSRuntime JS
+@inject OpenAIAgentService OpenAI
+
+<PageTitle>NPC Generator</PageTitle>
+
+<div style="min-height: 100vh; background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%); padding: 2rem 0;">
+    <div class="container-fluid">
+
+        <div class="text-center mb-4">
+            <h1 style="color: #f7fafc; font-weight: 700; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+                <span class="bi bi-person-bounding-box me-3" style="color: #ed8936;"></span>
+                Create NPC
+            </h1>
+            <p style="color: #a0aec0; font-size: 1.1rem; margin-top: 0.5rem;">Generate unique characters for your D&D campaign</p>
+        </div>
+
+        <div class="row justify-content-center">
+
+            <div class="col-lg-5 col-md-6 mb-4">
+                <div class="card shadow-lg" style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); border: 1px solid #4a5568; border-radius: 12px;">
+                    <div class="card-header" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid #4a5568; border-radius: 12px 12px 0 0;">
+                        <h5 class="mb-0" style="color: #f7fafc; font-weight: 600;">
+                            <span class="bi bi-gear-fill me-2" style="color: #4299e1;"></span>
+                            Character Configuration
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <EditForm Model="npc" OnSubmit="GenerateNPC">
+                            
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                        <span class="bi bi-tag me-1" style="color: #48bb78;"></span>Name:
+                                    </label>
+                                    <button type="button" class="btn btn-sm" @onclick="GenerateRandomNPCName" disabled="@isGeneratingName"
+                                            style="background: #9f7aea; color: white; border: none; border-radius: 4px; padding: 0.25rem 0.5rem;">
+                                        @if (isGeneratingName)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                        }
+                                        else
+                                        {
+                                            <span class="bi bi-shuffle me-1"></span>
+                                        }
+                                        Random
+                                    </button>
+                                </div>
+                                
+                                <InputText class="form-control" @bind-Value="npc.Name" @bind:event="oninput"
+                                           style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px;"
+                                           placeholder="Enter character name (optional)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                    <span class="bi bi-people me-1" style="color: #9f7aea;"></span>Race:
+                                </label>
+                                <InputSelect class="form-select" @bind-Value="npc.Race"
+                                             style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px;">
+                                    @foreach (var race in Enum.GetValues<Race>())
+                                    {
+                                        <option value="@race">@race</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                    <span class="bi bi-shield me-1" style="color: #f56565;"></span>Class:
+                                </label>
+                                <InputSelect class="form-select" @bind-Value="npc.Class"
+                                             style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px;">
+                                    @foreach (var npcClass in Enum.GetValues<Class>())
+                                    {
+                                        <option value="@npcClass">@npcClass</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                    <span class="bi bi-emoji-smile me-1" style="color: #4fd1c7;"></span>NPC Tone/Archetype:
+                                </label>
+                                <InputSelect class="form-select" @bind-Value="npc.Tone"
+                                             style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px;">
+                                    @foreach (var tone in Enum.GetValues<Tone>())
+                                    {
+                                        <option value="@tone">@tone</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                    <span class="bi bi-journal-text me-1" style="color: #68d391;"></span>Additional Description:
+                                </label>
+                                <InputTextArea class="form-control" @bind-Value="npc.Prompt" rows="4"
+                                               style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px; resize: vertical;"
+                                               placeholder="Describe your NPC in detail..." />
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-lg" disabled="@isLoading"
+                                        style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border: none; color: white; font-weight: 600; border-radius: 8px; padding: 0.75rem;">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Generating...</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="bi bi-magic me-2"></span>
+                                        <span>Generate NPC</span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="col-lg-7 col-md-6">
+                @if (createdNPC && result != null)
+                {
+                    <div class="card shadow-lg" style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); color: #e2e8f0; border: 1px solid #4a5568; border-radius: 12px;">
+                        <div class="card-body p-4">
+
+                            <div class="mb-3 pb-3 border-bottom" style="border-color: #4a5568 !important;">
+                                <h4 class="card-title mb-1" style="color: #f7fafc; font-weight: 600;">@result.Name</h4>
+                                <div class="d-flex gap-3 text-muted">
+                                    <span class="badge" style="background: #4299e1; color: white; padding: 0.4rem 0.8rem; border-radius: 6px;">@result.Race</span>
+                                    <span class="badge" style="background: #48bb78; color: white; padding: 0.4rem 0.8rem; border-radius: 6px;">@result.Class</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6 class="mb-2" style="color: #cbd5e0; font-weight: 500; font-size: 0.95rem;">
+                                    <span class="bi bi-journal-text me-2" style="color: #4299e1;"></span>Description
+                                </h6>
+                                <p class="card-text mb-0" style="line-height: 1.5; color: #e2e8f0;">@result.Description</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="mb-2" style="color: #cbd5e0; font-weight: 500; font-size: 0.95rem;">
+                                    <span class="bi bi-emoji-smile me-2" style="color: #48bb78;"></span>Personality
+                                </h6>
+                                <p class="card-text mb-0" style="line-height: 1.5; color: #e2e8f0;">@result.Personality</p>
+                            </div>
+
+                            <div class="p-3 rounded" style="background: rgba(0,0,0,0.2); border-left: 4px solid #ed8936; border-radius: 8px;">
+                                <h6 class="mb-3" style="color: #fbb6ce; font-weight: 600;">
+                                    <span class="bi bi-dice-6 me-2" style="color: #ed8936;"></span>DM Notes
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="p-2 rounded" style="background: rgba(0,0,0,0.1); border-radius: 6px;">
+                                            <strong style="color: #f56565;">
+                                                <span class="bi bi-eye-slash me-1"></span>Secret:
+                                            </strong>
+                                            <div class="mt-1" style="color: #e2e8f0;">@result.Secret</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="p-2 rounded" style="background: rgba(0,0,0,0.1); border-radius: 6px;">
+                                            <strong style="color: #4fd1c7;">
+                                                <span class="bi bi-sword me-1"></span>Combat Style:
+                                            </strong>
+                                            <div class="mt-1" style="color: #e2e8f0;">@result.CombatStyle</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="p-2 rounded" style="background: rgba(0,0,0,0.1); border-radius: 6px;">
+                                            <strong style="color: #68d391;">
+                                                <span class="bi bi-lightbulb me-1"></span>Plot Hook:
+                                            </strong>
+                                            <div class="mt-1" style="color: #e2e8f0;">@result.PlotHook</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (result.Town != null)
+                            {
+                                <div class="mt-3 pt-3 border-top" style="border-color: #4a5568 !important;">
+                                    <p class="mb-0" style="color: #a0aec0;">
+                                        <strong style="color: #9f7aea;">
+                                            <span class="bi bi-geo-alt me-1"></span>Town:
+                                        </strong>
+                                        <span style="color: #e2e8f0;">@result.Town.Name</span>
+                                    </p>
+                                </div>
+                            }
+
+                            <div class="mt-4 pt-3 border-top" style="border-color: #4a5568 !important;">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn" @onclick="CopyToClipboard"
+                                            style="background: #4299e1; color: white; border: none; border-radius: 6px; padding: 0.5rem 1rem; font-weight: 500;">
+                                        <span class="bi bi-clipboard me-1"></span>
+                                        @(copyButtonText)
+                                    </button>
+
+                                    <button class="btn" @onclick="SaveNPC"
+                                            style="background: #48bb78; color: white; border: none; border-radius: 6px; padding: 0.5rem 1rem; font-weight: 500;">
+                                        <span class="bi bi-floppy me-1"></span>
+                                        Save NPC
+                                    </button>
+
+                                    <button class="btn" @onclick="ExportAsText"
+                                            style="background: #9f7aea; color: white; border: none; border-radius: 6px; padding: 0.5rem 1rem; font-weight: 500;">
+                                        <span class="bi bi-file-text me-1"></span>
+                                        Export as Text
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="card shadow-lg" style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); border: 1px solid #4a5568; border-radius: 12px; min-height: 400px;">
+                        <div class="card-body d-flex align-items-center justify-content-center">
+                            <div class="text-center" style="color: #a0aec0;">
+                                <span class="bi bi-person-plus" style="font-size: 4rem; color: #4a5568; margin-bottom: 1rem; display: block;"></span>
+                                <h5 style="color: #cbd5e0;">Your Generated NPC Will Appear Here</h5>
+                                <p>Fill out the form and click "Generate NPC" to create your character</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<br />
+<br />
+
+@if (showError)
+{
+    <div class="modal fade show" style="display:block; background: rgba(0,0,0,0.7);">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background: #2d3748; color: #e2e8f0; border: 1px solid #4a5568;">
+                <div class="modal-header" style="border-bottom: 1px solid #4a5568;">
+                    <h5 class="modal-title" style="color: #f56565;">
+                        <span class="bi bi-exclamation-triangle me-2"></span>Error
+                    </h5>
+                    <button class="btn-close btn-close-white" @onclick="CloseError"></button>
+                </div>
+                <div class="modal-body">
+                    @errorMessage
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #4a5568;">
+                    <button class="btn" @onclick="CloseError"
+                    style="background: #4a5568; color: #e2e8f0; border: none; border-radius: 6px;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@code {
+    private NPCViewModel npc;
+    private bool isLoading = false;
+    private bool createdNPC = false;
+    private NPC result;
+    private string errorMessage = "";
+    private bool showError = false;
+    private string copyButtonText = "Copy to Clipboard";
+    private bool isGeneratingName = false;
+
+    protected override void OnInitialized()
+    {
+        npc = new NPCViewModel();
+    }
+
+    private async Task GenerateNPC()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try 
+        {  
+            result = await OpenAI.GenerateNPCAsync(npc, TypeOfPrompt.NPCGenerator);
+            createdNPC = true;
+            StateHasChanged();
+
+        }
+        catch (JsonException jsonEx)
+        {
+            errorMessage = "AI returned invalid JSON. Please contact support";
+            showError = true;
+        }
+        catch (Exception ex) 
+        {
+            errorMessage = "AI agent encountered an error. Please try again";
+            showError = true;
+        } 
+        finally 
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseError() 
+    {
+        showError = false;
+        StateHasChanged();
+    }
+
+    private async Task GenerateRandomNPCName()
+    {
+        try
+        {
+            isGeneratingName = true;
+            npc.Name = await OpenAI.GenerateNPCNameAsync(npc.Race, npc.Class, npc.Tone.ToString());
+        }
+        catch (Exception)
+        {
+            npc.Name = "Generated Name"; // Fallback
+        }
+        finally
+        {
+            isGeneratingName = false;
+        }
+    }
+
+    private async Task CopyToClipboard()
+    {
+        if (result == null) return;
+
+        var npcText = FormatNPCAsText(result);
+
+        try
+        {
+            var success = await JS.InvokeAsync<bool>("copyToClipboard", npcText);
+            if (success)
+            {
+                copyButtonText = "Copied!";
+                StateHasChanged();
+
+                await Task.Delay(2000);
+                copyButtonText = "Copy to Clipboard";
+                StateHasChanged();
+            }
+        }
+        catch (Exception)
+        {
+            copyButtonText = "Copy failed";
+            await Task.Delay(2000);
+            copyButtonText = "Copy to Clipboard";
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveNPC()
+    {
+        if (result == null) return
+    ;
+
+        // TODO: Implement save logic
+        errorMessage = "Save functionality coming soon! For now, use 'Copy to Clipboard' or 'Export as Text'.";
+        showError = true;
+    }
+
+    private async Task ExportAsText()
+    {
+        if (result == null) return;
+
+        var npcText = FormatNPCAsText(result);
+        var filename = $"{result.Name.Replace(" ", "_")}_NPC.txt";
+
+        await JS.InvokeVoidAsync("downloadTextFile", filename, npcText);
+    }
+
+    private string FormatNPCAsText(NPC npc)
+    {
+        var sb = new System.Text.StringBuilder();
+
+        sb.AppendLine("=".PadRight(50, '='));
+        sb.AppendLine($"NPC: {npc.Name}");
+        sb.AppendLine("=".PadRight(50, '='));
+        sb.AppendLine();
+
+        sb.AppendLine($"Race: {npc.Race}");
+        sb.AppendLine($"Class: {npc.Class}");
+        sb.AppendLine();
+
+        sb.AppendLine("DESCRIPTION:");
+        sb.AppendLine(npc.Description);
+        sb.AppendLine();
+
+        sb.AppendLine("PERSONALITY:");
+        sb.AppendLine(npc.Personality);
+        sb.AppendLine();
+
+        sb.AppendLine("DM NOTES:");
+        sb.AppendLine($"Secret: {npc.Secret}");
+        sb.AppendLine($"Combat Style: {npc.CombatStyle}");
+        sb.AppendLine($"Plot Hook: {npc.PlotHook}");
+
+        if (npc.Town != null)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Town: {npc.Town.Name}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+        return sb.ToString();
+    }
+}

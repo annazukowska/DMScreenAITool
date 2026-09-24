@@ -1,0 +1,525 @@
+﻿@page "/town-generator"
+@rendermode InteractiveServer
+@using DMScreenAITool.Enums
+@using DMScreenAITool.Data.Model
+@using DMScreenAITool.Data.View
+@using DMScreenAITool.Services
+@using System.Text.Json
+@inject OpenAIAgentService OpenAI
+@inject IJSRuntime JS
+
+<PageTitle>Town Generator</PageTitle>
+
+<div style="min-height: 100vh; background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%); padding: 2rem 0;">
+    <div class="container-fluid">
+
+        <div class="text-center mb-4">
+            <h1 style="color: #f7fafc; font-weight: 700; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+                <span class="bi bi-buildings me-3" style="color: #ed8936;"></span>
+                Create Town
+            </h1>
+            <p style="color: #a0aec0; font-size: 1.1rem; margin-top: 0.5rem;">Generate unique settlements for your D&D campaign</p>
+        </div>
+
+        <div class="row justify-content-center">
+
+            <div class="col-lg-5 col-md-6 mb-4">
+                <div class="card shadow-lg" style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); border: 1px solid #4a5568; border-radius: 12px;">
+                    <div class="card-header" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid #4a5568; border-radius: 12px 12px 0 0;">
+                        <h5 class="mb-0" style="color: #f7fafc; font-weight: 600;">
+                            <span class="bi bi-gear-fill me-2" style="color: #4299e1;"></span>
+                            Town Configuration
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                    <span class="bi bi-tag me-1" style="color: #48bb78;"></span>Town Name:
+                                </label>
+                                <button type="button" class="btn btn-sm" @onclick="GenerateRandomTownName" disabled="@isGeneratingTownName"
+                                        style="background: #9f7aea; color: white; border: none; border-radius: 4px; padding: 0.25rem 0.5rem;">
+                                    @if (isGeneratingTownName)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-1"></span>
+                                    }
+                                    else
+                                    {
+                                        <span class="bi bi-shuffle me-1"></span>
+                                    }
+                                    Random
+                                </button>
+                            </div>
+                            <input class="form-control" @bind="town.Name" @bind:event="oninput"
+                                   style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px;"
+                                   placeholder="Enter town name (optional)" />
+                        </div>
+
+
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                <span class="bi bi-tree me-1" style="color: #9f7aea;"></span>Biome:
+                            </label>
+                            <select class="form-select" @bind="town.Biome"
+                                    style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px;">
+                                @foreach (var biome in Enum.GetValues<Biome>())
+                                {
+                                    <option value="@biome">@biome</option>
+                                }
+                            </select>
+                        </div>
+
+
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                <span class="bi bi-house me-1" style="color: #f56565;"></span>Town Size:
+                            </label>
+                            <select class="form-select" @bind="town.TownSize"
+                                    style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px;">
+                                <option value="Village">Village (3 locations)</option>
+                                <option value="Small Town">Small Town (6 locations)</option>
+                                <option value="Large Town">Large Town (9 locations)</option>
+                                <option value="City">City (12 locations)</option>
+                                <option value="Large City">Large City (15 locations)</option>
+                                <option value="Custom">Custom Size...</option>
+                            </select>
+                        </div>
+
+                        @if (town.TownSize == "Custom")
+                        {
+                            <div class="mb-3">
+                                <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                    <span class="bi bi-pencil me-1" style="color: #68d391;"></span>Custom Size Description:
+                                </label>
+                                <input class="form-control" @bind="customTownSize" @bind:event="oninput"
+                                       style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px;"
+                                       placeholder="e.g., Sprawling Metropolis, Tiny Hamlet" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                    <span class="bi bi-geo-alt me-1" style="color: #4299e1;"></span>Number of Locations: @town.LociationsNumber
+                                </label>
+                                <input type="range" class="form-range" @bind="town.LociationsNumber" @bind:event="oninput"
+                                       min="2" max="15" step="1"
+                                       style="accent-color: #ed8936;" />
+                                <div class="d-flex justify-content-between text-muted" style="font-size: 0.8rem;">
+                                    <span>2</span>
+                                    <span>15 (max)</span>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                <span class="bi bi-flag me-1" style="color: #4fd1c7;"></span>Country/Region:
+                            </label>
+                            <input class="form-control" @bind="town.CountryName" @bind:event="oninput"
+                                   style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px;"
+                                   placeholder="Enter country or region name (optional)" />
+                        </div>
+
+
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #cbd5e0; font-weight: 500; margin-bottom: 0.75rem;">
+                                <span class="bi bi-gear me-1" style="color: #ed8936;"></span>Additional Generation Options:
+                            </label>
+
+                            <div class="mb-2" style="padding-left: 1.5rem;">
+                                <div class="d-flex align-items-start">
+                                    <input class="form-check-input me-3 mt-1" type="checkbox" @bind="town.ShoulGenerateQuests" id="generateQuests"
+                                           style="background-color: #1a202c; border-color: #4a5568; flex-shrink: 0;">
+                                    <label class="form-check-label" for="generateQuests" style="color: #e2e8f0;">
+                                        <span class="bi bi-journal-bookmark me-1" style="color: #68d391;"></span>
+                                        Generate quests for locations
+                                        <small class="text-muted d-block" style="font-size: 0.8rem;">⚠️ Increases AI cost significantly</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-2" style="padding-left: 1.5rem;">
+                                <div class="d-flex align-items-start">
+                                    <input class="form-check-input me-3 mt-1" type="checkbox" @bind="town.ShoulGenerateNPCs" id="generateNPCs"
+                                           style="background-color: #1a202c; border-color: #4a5568; flex-shrink: 0;">
+                                    <label class="form-check-label" for="generateNPCs" style="color: #e2e8f0;">
+                                        <span class="bi bi-people me-1" style="color: #4299e1;"></span>
+                                        Generate NPCs for locations
+                                        <small class="text-muted d-block" style="font-size: 0.8rem;">⚠️ Increases AI cost significantly</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Warning -->
+                        @if (town.ShoulGenerateQuests || town.ShoulGenerateNPCs)
+                        {
+                            <div class="alert alert-warning mb-3" style="background: rgba(237, 137, 54, 0.1); border: 1px solid #ed8936; color: #fbb6ce; border-radius: 6px;">
+                                <span class="bi bi-exclamation-triangle me-2"></span>
+                                <strong>Cost Warning:</strong> You've selected additional generation options.
+                                This may significantly increase AI API usage costs!
+                                <br><small>Estimated locations: @GetLocationCount() | Extra generations: @((town.ShoulGenerateQuests ? GetLocationCount() : 0) + (town.ShoulGenerateNPCs ? GetLocationCount() : 0))</small>
+                            </div>
+                        }
+
+
+                        <div class="mb-4">
+                            <label class="form-label" style="color: #cbd5e0; font-weight: 500;">
+                                <span class="bi bi-journal-text me-1" style="color: #68d391;"></span>Additional Description:
+                            </label>
+                            <textarea class="form-control" @bind="town.Prompt" @bind:event="oninput" rows="4"
+                                      style="background: #1a202c; border: 1px solid #4a5568; color: #e2e8f0; border-radius: 6px; resize: vertical;"
+                                      placeholder="Describe your town in detail..."></textarea>
+                        </div>
+
+
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-lg" disabled="@isLoading" @onclick="GenerateTown"
+                                    style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border: none; color: white; font-weight: 600; border-radius: 8px; padding: 0.75rem;">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    <span>Generating...</span>
+                                }
+                                else
+                                {
+                                    <span class="bi bi-magic me-2"></span>
+                                    <span>Generate Town</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="col-lg-7 col-md-6">
+                @if (createdTown && result != null)
+                {
+                    <div class="card shadow-lg" style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); color: #e2e8f0; border: 1px solid #4a5568; border-radius: 12px;">
+                        <div class="card-body p-4">
+
+                            <div class="mb-3 pb-3 border-bottom" style="border-color: #4a5568 !important;">
+                                <h4 class="card-title mb-1" style="color: #f7fafc; font-weight: 600;">@result.Name</h4>
+                                <div class="d-flex gap-3 text-muted">
+                                    <span class="badge" style="background: #4299e1; color: white; padding: 0.4rem 0.8rem; border-radius: 6px;">@result.Biome</span>
+                                    <span class="badge" style="background: #48bb78; color: white; padding: 0.4rem 0.8rem; border-radius: 6px;">@result.TownSize</span>
+                                    @if (!string.IsNullOrEmpty(result.CountryName))
+                                    {
+                                        <span class="badge" style="background: #9f7aea; color: white; padding: 0.4rem 0.8rem; border-radius: 6px;">@result.CountryName</span>
+                                    }
+                                </div>
+                            </div>
+
+
+                            @if (!string.IsNullOrEmpty(result.AdditionalDescription))
+                            {
+                                <div class="mb-3">
+                                    <h6 class="mb-2" style="color: #cbd5e0; font-weight: 500; font-size: 0.95rem;">
+                                        <span class="bi bi-journal-text me-2" style="color: #4299e1;"></span>Description
+                                    </h6>
+                                    <p class="card-text mb-0" style="line-height: 1.5; color: #e2e8f0;">@result.AdditionalDescription</p>
+                                </div>
+                            }
+
+
+                            @if (result.NotableLocations != null && result.NotableLocations.Any())
+                            {
+                                <div class="mb-4">
+                                    <h6 class="mb-3" style="color: #cbd5e0; font-weight: 500; font-size: 0.95rem;">
+                                        <span class="bi bi-geo-alt me-2" style="color: #48bb78;"></span>Notable Locations
+                                    </h6>
+                                    <div class="row g-2">
+                                        @foreach (var location in result.NotableLocations)
+                                        {
+                                            <div class="col-12">
+                                                <div class="p-2 rounded" style="background: rgba(0,0,0,0.1); border-radius: 6px;">
+                                                    <strong style="color: #68d391;">@location.Name:</strong>
+                                                    <div class="mt-1" style="color: #e2e8f0; font-size: 0.9rem;">@location.Description</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+
+                            <div class="p-3 rounded" style="background: rgba(0,0,0,0.2); border-left: 4px solid #ed8936; border-radius: 8px;">
+                                <h6 class="mb-3" style="color: #fbb6ce; font-weight: 600;">
+                                    <span class="bi bi-dice-6 me-2" style="color: #ed8936;"></span>DM Notes
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="p-2 rounded" style="background: rgba(0,0,0,0.1); border-radius: 6px;">
+                                            <strong style="color: #f56565;">
+                                                <span class="bi bi-eye-slash me-1"></span>Secret:
+                                            </strong>
+                                            <div class="mt-1" style="color: #e2e8f0;">@result.Secret</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="p-2 rounded" style="background: rgba(0,0,0,0.1); border-radius: 6px;">
+                                            <strong style="color: #68d391;">
+                                                <span class="bi bi-lightbulb me-1"></span>Plot Hook:
+                                            </strong>
+                                            <div class="mt-1" style="color: #e2e8f0;">@result.PlotHook</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="mt-4 pt-3 border-top" style="border-color: #4a5568 !important;">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn" @onclick="CopyToClipboard"
+                                            style="background: #4299e1; color: white; border: none; border-radius: 6px; padding: 0.5rem 1rem; font-weight: 500;">
+                                        <span class="bi bi-clipboard me-1"></span>
+                                        @(copyButtonText)
+                                    </button>
+
+                                    <button class="btn" @onclick="SaveTown"
+                                            style="background: #48bb78; color: white; border: none; border-radius: 6px; padding: 0.5rem 1rem; font-weight: 500;">
+                                        <span class="bi bi-floppy me-1"></span>
+                                        Save Town
+                                    </button>
+
+                                    <button class="btn" @onclick="ExportAsText"
+                                            style="background: #9f7aea; color: white; border: none; border-radius: 6px; padding: 0.5rem 1rem; font-weight: 500;">
+                                        <span class="bi bi-file-text me-1"></span>
+                                        Export as Text
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+
+                    <div class="card shadow-lg" style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); border: 1px solid #4a5568; border-radius: 12px; min-height: 400px;">
+                        <div class="card-body d-flex align-items-center justify-content-center">
+                            <div class="text-center" style="color: #a0aec0;">
+                                <span class="bi bi-buildings" style="font-size: 4rem; color: #4a5568; margin-bottom: 1rem; display: block;"></span>
+                                <h5 style="color: #cbd5e0;">Your Generated Town Will Appear Here</h5>
+                                <p>Fill out the form and click "Generate Town" to create your settlement</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@if (showError)
+{
+    <div class="modal fade show" style="display:block; background: rgba(0,0,0,0.7);">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background: #2d3748; color: #e2e8f0; border: 1px solid #4a5568;">
+                <div class="modal-header" style="border-bottom: 1px solid #4a5568;">
+                    <h5 class="modal-title" style="color: #f56565;">
+                        <span class="bi bi-exclamation-triangle me-2"></span>Error
+                    </h5>
+                    <button class="btn-close btn-close-white" @onclick="CloseError"></button>
+                </div>
+                <div class="modal-body">
+                    @errorMessage
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #4a5568;">
+                    <button class="btn" @onclick="CloseError"
+                            style="background: #
+4a5568; color: #e2e8f0; border: none; border-radius: 6px;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private TownViewModel town = new TownViewModel();
+    private bool isLoading = false;
+    private bool createdTown = false;
+    private Town result;
+    private string errorMessage;
+    private bool showError = false;
+    private string copyButtonText = "Copy to Clipboard";
+    private bool isGeneratingTownName = false;
+
+    // Keep this for UI logic
+    private string customTownSize = "";
+
+    protected override void OnInitialized()
+    {
+        // Initialize with default values
+        town.LociationsNumber = 5;
+    }
+
+    private int GetLocationCount()
+    {
+        if (town.TownSize == "Custom")
+            return Math.Min(town.LociationsNumber, 15);
+
+        return town.TownSize switch
+        {
+            "Village" => 3,
+            "Small Town" => 6,
+            "Large Town" => 9,
+            "City" => 12,
+            "Large City" => 15,
+            _ => 3
+        };
+    }
+
+    private string GetFinalTownSize()
+    {
+        return town.TownSize == "Custom" ? customTownSize : town.TownSize;
+    }
+
+    private async Task GenerateTown()
+    {
+        isLoading = true;
+
+        try
+        {
+            town.LociationsNumber = GetLocationCount();
+
+
+            if ((town.ShoulGenerateQuests || town.ShoulGenerateNPCs) && town.LociationsNumber > 5)
+            {
+                var extraCalls = (town.ShoulGenerateQuests ? town.LociationsNumber : 0) +
+                                (town.ShoulGenerateNPCs ? town.LociationsNumber : 0);
+                Console.WriteLine($"Warning: {extraCalls} extra AI calls will be made!");
+            }
+
+            result = await OpenAI.GenerateTownAsync(town, TypeOfPrompt.TownGenerator);
+            createdTown = true;
+        }
+        catch (JsonException jsonEx)
+        {
+            errorMessage = "AI returned invalid JSON. Please contact support";
+            showError = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "AI agent encountered an error. Please try again";
+            showError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task GenerateRandomTownName()
+    {
+        try
+        {
+            isGeneratingTownName = true;
+            town.Name = await OpenAI.GenerateTownNameAsync(town.Biome, town.TownSize);
+        }
+        catch (Exception)
+        {
+            town.Name = "Generated Town"; // Fallback
+        }
+        finally
+        {
+            isGeneratingTownName = false;
+        }
+    }
+
+    private async Task CopyToClipboard()
+    {
+        if (result == null) return;
+
+        var townText = FormatTownAsText(result);
+
+        try
+        {
+            var success = await JS.InvokeAsync<bool>("copyToClipboard", townText);
+            if (success)
+            {
+                copyButtonText = "Copied!";
+                StateHasChanged();
+
+                await Task.Delay(2000);
+                copyButtonText = "Copy to Clipboard";
+                StateHasChanged();
+            }
+        }
+        catch (Exception)
+        {
+            copyButtonText = "Copy failed";
+            await Task.Delay(2000);
+            copyButtonText = "Copy to Clipboard";
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveTown()
+    {
+        if (result == null) return;
+
+        errorMessage = "Save functionality coming soon! For now, use 'Copy to Clipboard' or 'Export as Text'.";
+        showError = true;
+    }
+
+    private async Task ExportAsText()
+    {
+        if (result == null) return;
+
+        var townText = FormatTownAsText(result);
+        var filename = $"{result.Name.Replace(" ", "_")}_Town.txt";
+
+        await JS.InvokeVoidAsync("downloadTextFile", filename, townText);
+    }
+
+    private string FormatTownAsText(Town town)
+    {
+        var sb = new System.Text.StringBuilder();
+
+        sb.AppendLine("=".PadRight(50, '='));
+        sb.AppendLine($"TOWN: {town.Name}");
+        sb.AppendLine("=".PadRight(50, '='));
+        sb.AppendLine();
+
+        sb.AppendLine($"Biome: {town.Biome}");
+        sb.AppendLine($"Size: {town.TownSize}");
+        if (!string.IsNullOrEmpty(town.CountryName))
+            sb.AppendLine($"Country/Region: {town.CountryName}");
+        sb.AppendLine();
+
+        if (!string.IsNullOrEmpty(town.AdditionalDescription))
+        {
+            sb.AppendLine("DESCRIPTION:");
+            sb.AppendLine(town.AdditionalDescription);
+            sb.AppendLine();
+        }
+
+        if (town.NotableLocations != null && town.NotableLocations.Any())
+        {
+            sb.AppendLine("NOTABLE LOCATIONS:");
+            foreach (var location in town.NotableLocations)
+            {
+                sb.AppendLine($"• {location.Name}: {location.Description}");
+            }
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("DM NOTES:");
+        sb.AppendLine($"Secret: {town.Secret}");
+        sb.AppendLine($"Plot Hook: {town.PlotHook}");
+
+        sb.AppendLine();
+        sb.AppendLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+        return sb.ToString();
+    }
+
+    private void CloseError()
+    {
+        showError = false;
+    }
+}

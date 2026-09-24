@@ -1,0 +1,122 @@
+﻿@page "/"
+<PageTitle>AI DM Toolkit</PageTitle>
+
+
+<div style="min-height: 100vh; background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%); padding: 2rem 0;">
+    <div class="container-fluid">
+
+        <div class="text-center mb-5 pt-5">
+            <div class="mb-4">
+                <span class="bi bi-dice-6-fill" style="font-size: 4rem; color: #ed8936; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);"></span>
+            </div>
+            <h1 style="color: #f7fafc; font-weight: 700; font-size: 3.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 1rem;">
+                AI DM Toolkit
+            </h1>
+            <p style="color: #a0aec0; font-size: 1.3rem; margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Unleash your creativity with AI-powered tools designed for Dungeon Masters.
+                Generate compelling NPCs, vibrant towns, and endless adventures.
+            </p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="/npc-generator" class="btn btn-lg"
+                   style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border: none; color: white; font-weight: 600; border-radius: 8px; padding: 0.75rem 2rem; text-decoration: none;">
+                    <span class="bi bi-person-bounding-box me-2"></span>
+                    Start Creating NPCs
+                </a>
+                <a href="/town-generator" class="btn btn-lg"
+                   style="background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); border: none; color: white; font-weight: 600; border-radius: 8px; padding: 0.75rem 2rem; text-decoration: none;">
+                    <span class="bi bi-buildings me-2"></span>
+                    Generate Towns
+                </a>
+            </div>
+        </div>
+
+
+        <div class="row justify-content-center mt-5 pt-5">
+            <div class="col-lg-10">
+                <h2 class="text-center mb-5" style="color: #f7fafc; font-weight: 600; font-size: 2.5rem;">
+                    Everything You Need to Run Epic Campaigns
+                </h2>
+
+                <div class="row g-4">
+
+                    <div class="col-md-6">
+                        <div class="card h-100 shadow-lg" style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); border: 1px solid #4a5568; border-radius: 12px;">
+                            <div class="card-body p-4 text-center">
+                                <div class="mb-3">
+
+                                    <span class="bi bi-person-bounding-box" style="font-size: 3rem; color: #48bb78;"></span>
+                                </div>
+                                <h4 style="color: #f7fafc; font-weight: 600; margin-bottom: 1rem;">NPC Generator</h4>
+                                <p style="color: #a0aec0; line-height: 1.6; margin-bottom: 1.5rem;">
+                                    Create memorable characters with rich backstories, secrets, and plot hooks.
+                                    From tavern keepers to mysterious wizards, bring your world to life.
+                                </p>
+                                <ul class="list-unstyled text-start" style="color: #cbd5e0;">
+                                    <li class="mb-2"><span class="bi bi-check-circle me-2" style="color: #48bb78;"></span>Detailed personalities & backgrounds</li>
+                                    <li class="mb-2"><span class="bi bi-check-circle me-2" style="color: #48bb78;"></span>Hidden secrets for intrigue</li>
+                                    <li class="mb-2"><span class="bi bi-check-circle me-2" style="color: #48bb78;"></span>Combat styles & tactics</li>
+                                    <li class="mb-2"><span class="bi bi-check-circle me-2" style="color: #48bb78;"></span>Ready-to-use plot hooks</li>
+                                </ul>
+                                <a href="/npc-generator" class="btn w-100 mt-3"
+                                   style="background: #48bb78; color: white; border: none; border-radius: 6px; font-weight: 500;">
+                                    Create NPCs
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="col-md-6">
+                        <div class="card h-100 shadow-lg" style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); border: 1px solid #4a5568; border-radius: 12px;">
+                            <div class="card-body p-4 text-center">
+                                <div class="mb-3">
+                                    <span class="bi bi-buildings" style="font-size: 3rem; color: #4299e1;"></span>
+                                </div>
+                                <h4 style="color: #f7fafc; font-weight: 600; margin-bottom: 1rem;">Town Generator</h4>
+                                <p style="color: #a0aec0; line-height: 1.6; margin-bottom: 1.5rem;">
+                                    Build immersive settlements from bustling cities to quiet villages.
+                                    Complete with notable locations, secrets, and adventure opportunities.
+                                </p>
+                                <ul class="list-unstyled text-start" style="color: #cbd5e0;">
+                                    <li class="mb-2"><span class="bi bi-check-circle me-2" style="color: #4299e1;"></span>Customizable size & biome</li>
+                                    <li class="mb-2"><span class="bi bi-check-circle me-2" style="color: #4299e1;"></span>Notable locations & landmarks</li>
+                                    <li class="mb-2"><span class="bi bi-check-circle me-2" style="color: #4299e1;"></span>Town secrets & mysteries</li>
+                                    <li class="mb-2"><span class="bi bi-check-circle me-2" style="color: #4299e1;"></span>Adventure plot hooks</li>
+                                </ul>
+                                <a href="/town-generator" class="btn w-100 mt-3"
+                                   style="background: #4299e1; color: white; border: none; border-radius: 6px; font-weight: 500;">
+                                    Generate Towns
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="text-center mt-5 pt-5 pb-5">
+            <div class="card shadow-lg mx-auto" style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); border: 1px solid #4a5568; border-radius: 12px; max-width: 600px;">
+                <div class="card-body p-4">
+                    <h3 style="color: #f7fafc; font-weight: 600; margin-bottom: 1rem;">Ready to Enhance Your Campaign?</h3>
+                    <p style="color: #a0aec0; margin-bottom: 2rem;">
+                        Join thousands of DMs who are creating unforgettable adventures with AI assistance.
+                    </p>
+                    <div class="d-flex gap-2 justify-content-center flex-wrap">
+                        <a href="/npc-generator" class="btn"
+                           style="background: #48bb78; color: white; border: none; border-radius: 6px; padding: 0.5rem 1.5rem; font-weight: 500;">
+                            <span class="bi bi-person-plus me-1"></span>
+
+                            Create Your First NPC
+                        </a>
+                        <a href="/town-generator" class="btn"
+                           style="background: #4299e1; color: white; border: none; border-radius: 6px; padding: 0.5rem 1.5rem; font-weight: 500;">
+                            <span class="bi bi-plus-square me-1"></span>
+                            Build Your First Town
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

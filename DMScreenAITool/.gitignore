@@ -1,0 +1,32 @@
+﻿# API Keys and sensitive configuration
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Local.json
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio files
+.vs/
+*.vscode/
+bin/
+obj/
+
+# Temporary files
+*.tmp
+*.temp
